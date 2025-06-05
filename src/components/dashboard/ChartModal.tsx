@@ -66,7 +66,11 @@ export const ChartModal: React.FC<ChartModalProps> = ({
       title,
       data: [],
       size: { width: 400, height: 300 },
-      signals: selectedSignals
+      signals: selectedSignals,
+      signalFilters: [],
+      legendName: 'Legend',
+      xAxisName: 'Time',
+      yAxisName: 'Value'
     });
 
     // Reset form
