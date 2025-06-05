@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface ChartConfig {
   id: string;
-  type: 'line' | 'bar' | 'scatter' | 'area';
+  type: 'line' | 'bar' | 'scatter' | 'area' | 'heatmap' | 'anomaly';
   title: string;
   data: any[];
   position: { x: number; y: number };
@@ -24,6 +23,7 @@ export interface ChartConfig {
   legendName: string;
   xAxisName: string;
   yAxisName: string;
+  enableCursor?: boolean;
 }
 
 export interface DashboardConfig {
@@ -58,7 +58,8 @@ const Dashboard = () => {
       signalFilters: [],
       legendName: 'Legend',
       xAxisName: 'Time',
-      yAxisName: 'Value'
+      yAxisName: 'Value',
+      enableCursor: true
     };
     setCharts(prev => [...prev, newChart]);
     toast({

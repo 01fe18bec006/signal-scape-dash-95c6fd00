@@ -4,10 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import { LineChart, BarChart3, ScatterChart, AreaChart } from 'lucide-react';
+import { LineChart, BarChart3, ScatterChart, AreaChart, TrendingUp, Activity } from 'lucide-react';
 import { ChartConfig } from '../Dashboard';
 
 interface ChartModalProps {
@@ -45,6 +44,20 @@ const chartTypes = [
     icon: AreaChart, 
     description: 'Emphasize magnitude',
     color: 'text-orange-600 bg-orange-50'
+  },
+  { 
+    value: 'heatmap', 
+    label: 'Heatmap', 
+    icon: TrendingUp, 
+    description: 'Show correlations',
+    color: 'text-red-600 bg-red-50'
+  },
+  { 
+    value: 'anomaly', 
+    label: 'Anomaly Detection', 
+    icon: Activity, 
+    description: 'Detect outliers and anomalies',
+    color: 'text-pink-600 bg-pink-50'
   }
 ];
 
@@ -57,6 +70,7 @@ export const ChartModal: React.FC<ChartModalProps> = ({
   const [title, setTitle] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedSignals, setSelectedSignals] = useState<string[]>([]);
+  const [enableCursor, setEnableCursor] = useState(false);
 
   const handleSubmit = () => {
     if (!title || !selectedType || selectedSignals.length === 0) return;
@@ -70,13 +84,15 @@ export const ChartModal: React.FC<ChartModalProps> = ({
       signalFilters: [],
       legendName: 'Legend',
       xAxisName: 'Time',
-      yAxisName: 'Value'
+      yAxisName: 'Value',
+      enableCursor
     });
 
     // Reset form
     setTitle('');
     setSelectedType('');
     setSelectedSignals([]);
+    setEnableCursor(false);
   };
 
   const handleSignalToggle = (signal: string) => {
@@ -164,6 +180,21 @@ export const ChartModal: React.FC<ChartModalProps> = ({
                 {selectedSignals.length} signal(s) selected
               </p>
             )}
+          </div>
+
+          {/* Chart Options */}
+          <div className="space-y-3">
+            <Label>Chart Options</Label>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="cursor"
+                checked={enableCursor}
+                onCheckedChange={setEnableCursor}
+              />
+              <Label htmlFor="cursor" className="text-sm cursor-pointer">
+                Enable Crosshair Cursor
+              </Label>
+            </div>
           </div>
         </div>
 

@@ -3,9 +3,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Upload, BarChart3, LineChart, ScatterChart, AreaChart, Save, FolderOpen, Info, Search, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, BarChart3, LineChart, ScatterChart, AreaChart, Save, FolderOpen, Info, Search, Plus, Database, Function, Bot } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,6 +15,9 @@ interface SidebarProps {
   selectedFiles: File[];
   onFilesChange: (files: File[]) => void;
   signals: string[];
+  onToggleQuery: () => void;
+  onToggleSignalCreation: () => void;
+  onToggleAI: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -24,7 +26,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLoadConfig,
   selectedFiles,
   onFilesChange,
-  signals
+  signals,
+  onToggleQuery,
+  onToggleSignalCreation,
+  onToggleAI
 }) => {
   const [isChartsOpen, setIsChartsOpen] = useState(true);
   const [isConfigOpen, setIsConfigOpen] = useState(true);
@@ -79,17 +84,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0 space-y-2">
-                {chartTypes.map((chart) => (
-                  <Button
-                    key={chart.type}
-                    variant="ghost"
-                    className="w-full justify-start hover:bg-blue-50 hover:text-blue-700"
-                    onClick={onAddChart}
-                  >
-                    <chart.icon className="w-4 h-4 mr-2" />
-                    {chart.name}
-                  </Button>
-                ))}
+                <Button
+                  variant="default"
+                  className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={onAddChart}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Chart
+                </Button>
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
@@ -155,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <input
                 type="file"
                 multiple
-                accept=".csv,.json,.txt"
+                accept=".csv,.json,.txt,.parquet"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
@@ -202,17 +204,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Info className="w-4 h-4 mr-2" />
                   Signal Info
                 </Button>
-                <Button variant="ghost" className="w-full justify-start hover:bg-orange-50 hover:text-orange-700">
-                  <Search className="w-4 h-4 mr-2" />
-                  Query Data
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start hover:bg-orange-50 hover:text-orange-700"
+                  onClick={onToggleQuery}
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  Query Dataset
                 </Button>
-                <Button variant="ghost" className="w-full justify-start hover:bg-orange-50 hover:text-orange-700">
-                  <Plus className="w-4 h-4 mr-2" />
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start hover:bg-orange-50 hover:text-orange-700"
+                  onClick={onToggleSignalCreation}
+                >
+                  <Function className="w-4 h-4 mr-2" />
                   Create Signal
                 </Button>
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
+        </Card>
+
+        {/* AI Options */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center space-x-2">
+              <Bot className="w-4 h-4 text-pink-600" />
+              <span>AI Options</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={onToggleAI}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg"
+            >
+              <Bot className="w-4 h-4 mr-2" />
+              🧠 AI Assistant
+            </Button>
+          </CardContent>
         </Card>
 
         {/* Available Signals */}
