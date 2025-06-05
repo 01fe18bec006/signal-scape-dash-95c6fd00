@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,8 @@ import { ChartModal } from './dashboard/ChartModal';
 import { ChartEditModal } from './dashboard/ChartEditModal';
 import { AIInsights } from './dashboard/AIInsights';
 import { FilterPanel } from './dashboard/FilterPanel';
+import { QueryDataset } from './dashboard/QueryDataset';
+import { SignalCreation } from './dashboard/SignalCreation';
 import { useToast } from '@/hooks/use-toast';
 
 export interface ChartConfig {
@@ -44,6 +47,9 @@ const Dashboard = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [signals, setSignals] = useState<string[]>(['signal1', 'signal2', 'signal3', 'temperature', 'pressure']);
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
+  const [showQuery, setShowQuery] = useState(false);
+  const [showSignalCreation, setShowSignalCreation] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const { toast } = useToast();
 
   const handleAddChart = useCallback(() => {
@@ -84,6 +90,32 @@ const Dashboard = () => {
     toast({
       title: "Chart Removed",
       description: "Chart has been deleted from the dashboard",
+    });
+  }, [toast]);
+
+  const handleToggleQuery = useCallback(() => {
+    setShowQuery(prev => !prev);
+    setShowSignalCreation(false);
+    setShowAI(false);
+  }, []);
+
+  const handleToggleSignalCreation = useCallback(() => {
+    setShowSignalCreation(prev => !prev);
+    setShowQuery(false);
+    setShowAI(false);
+  }, []);
+
+  const handleToggleAI = useCallback(() => {
+    setShowAI(prev => !prev);
+    setShowQuery(false);
+    setShowSignalCreation(false);
+  }, []);
+
+  const handleSignalCreated = useCallback((newSignalName: string) => {
+    setSignals(prev => [...prev, newSignalName]);
+    toast({
+      title: "Signal Added",
+      description: `New signal "${newSignalName}" is now available for charting`,
     });
   }, [toast]);
 
@@ -139,6 +171,9 @@ const Dashboard = () => {
           selectedFiles={selectedFiles}
           onFilesChange={setSelectedFiles}
           signals={signals}
+          onToggleQuery={handleToggleQuery}
+          onToggleSignalCreation={handleToggleSignalCreation}
+          onToggleAI={handleToggleAI}
         />
         
         <div className="flex-1 flex flex-col">
@@ -147,18 +182,48 @@ const Dashboard = () => {
             selectedFiles={selectedFiles}
           />
           
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             <MainCanvas
               charts={charts}
               onUpdateChart={handleUpdateChart}
               onRemoveChart={handleRemoveChart}
               onEditChart={handleEditChart}
             />
+
+            <QueryDataset 
+              signals={signals}
+              isVisible={showQuery}
+            />
+
+            <SignalCreation 
+              signals={signals}
+              isVisible={showSignalCreation}
+              onSignalCreated={handleSignalCreated}
+            />
           </div>
           
           <AIInsights charts={charts} signals={signals} />
         </div>
       </div>
+
+      <ChartModal
+        isOpen={isChartModalOpen}
+        onClose={() => setIsChartModalOpen(false)}
+        onAddChart={(chart) => {
+          const newChart: ChartConfig = {
+            ...chart,
+            id: `chart-${Date.now()}`,
+            position: { x: Math.random() * 200, y: Math.random() * 200 }
+          };
+          setCharts(prev => [...prev, newChart]);
+          setIsChartModalOpen(false);
+          toast({
+            title: "Chart Added",
+            description: "New chart created successfully",
+          });
+        }}
+        signals={signals}
+      />
 
       <ChartEditModal
         isOpen={isEditModalOpen}

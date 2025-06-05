@@ -189,7 +189,7 @@ export const ChartModal: React.FC<ChartModalProps> = ({
               <Checkbox
                 id="cursor"
                 checked={enableCursor}
-                onCheckedChange={setEnableCursor}
+                onCheckedChange={(checked) => setEnableCursor(checked === true)}
               />
               <Label htmlFor="cursor" className="text-sm cursor-pointer">
                 Enable Crosshair Cursor

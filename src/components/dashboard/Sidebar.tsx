@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Upload, BarChart3, LineChart, ScatterChart, AreaChart, Save, FolderOpen, Info, Search, Plus, Database, Function, Bot } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, BarChart3, LineChart, ScatterChart, AreaChart, Save, FolderOpen, Info, Search, Plus, Database, Calculator, Bot } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 
@@ -217,7 +216,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="w-full justify-start hover:bg-orange-50 hover:text-orange-700"
                   onClick={onToggleSignalCreation}
                 >
-                  <Function className="w-4 h-4 mr-2" />
+                  <Calculator className="w-4 h-4 mr-2" />
                   Create Signal
                 </Button>
               </CardContent>

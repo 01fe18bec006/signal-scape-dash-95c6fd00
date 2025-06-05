@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Function, Calculator } from 'lucide-react';
+import { Plus, Calculator, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface SignalCreationProps {
@@ -100,7 +100,7 @@ export const SignalCreation: React.FC<SignalCreationProps> = ({
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <Function className="w-5 h-5 text-green-600" />
+          <Zap className="w-5 h-5 text-green-600" />
           <span>Create New Signal</span>
         </CardTitle>
       </CardHeader>
