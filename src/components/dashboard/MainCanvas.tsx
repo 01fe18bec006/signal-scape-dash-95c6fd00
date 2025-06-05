@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Move, Maximize2 } from 'lucide-react';
+import { X, Move, Maximize2, Edit, GripHorizontal, GripVertical } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartConfig } from '../Dashboard';
 
@@ -11,6 +11,7 @@ interface MainCanvasProps {
   charts: ChartConfig[];
   onUpdateChart: (id: string, updates: Partial<ChartConfig>) => void;
   onRemoveChart: (id: string) => void;
+  onEditChart: (chart: ChartConfig) => void;
 }
 
 // Sample data for demonstration
@@ -32,10 +33,11 @@ const getRandomColor = () => {
 export const MainCanvas: React.FC<MainCanvasProps> = ({
   charts,
   onUpdateChart,
-  onRemoveChart
+  onRemoveChart,
+  onEditChart
 }) => {
   const renderChart = (chart: ChartConfig) => {
-    const { type, signals } = chart;
+    const { type, signals, xAxisName, yAxisName } = chart;
     
     const chartProps = {
       data: sampleData,
@@ -47,8 +49,8 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
         return (
           <LineChart {...chartProps}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
+            <XAxis dataKey="time" label={{ value: xAxisName, position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
             {signals.map((signal, index) => (
@@ -66,8 +68,8 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
         return (
           <AreaChart {...chartProps}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
+            <XAxis dataKey="time" label={{ value: xAxisName, position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
             {signals.map((signal, index) => (
@@ -85,8 +87,8 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
         return (
           <BarChart {...chartProps}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
+            <XAxis dataKey="time" label={{ value: xAxisName, position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
             {signals.map((signal, index) => (
@@ -102,8 +104,8 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
         return (
           <ScatterChart {...chartProps}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
+            <XAxis dataKey="time" label={{ value: xAxisName, position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
             {signals.map((signal, index) => (
@@ -118,6 +120,17 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
       default:
         return null;
     }
+  };
+
+  const handleResize = (chartId: string, direction: 'width' | 'height', delta: number) => {
+    const chart = charts.find(c => c.id === chartId);
+    if (!chart) return;
+
+    const newSize = {
+      ...chart.size,
+      [direction]: Math.max(200, chart.size[direction] + delta)
+    };
+    onUpdateChart(chartId, { size: newSize });
   };
 
   if (charts.length === 0) {
@@ -139,64 +152,132 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
 
   return (
     <div className="h-full relative bg-gray-50 rounded-lg border overflow-hidden">
-      <div className="absolute inset-0 p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-          {charts.map((chart) => (
-            <Card 
-              key={chart.id} 
-              className="relative group hover:shadow-lg transition-shadow duration-200 bg-white"
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium flex items-center space-x-2">
-                    <span>{chart.title}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {chart.type}
-                    </Badge>
-                  </CardTitle>
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                    >
-                      <Move className="w-3 h-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                    >
-                      <Maximize2 className="w-3 h-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-6 w-6 p-0 text-red-400 hover:text-red-600"
-                      onClick={() => onRemoveChart(chart.id)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
+      <div className="absolute inset-0 p-4 space-y-4">
+        {charts.map((chart) => (
+          <Card 
+            key={chart.id} 
+            className="relative group hover:shadow-lg transition-shadow duration-200 bg-white border-2 hover:border-blue-300"
+            style={{ 
+              width: chart.size.width, 
+              height: chart.size.height,
+              minWidth: '200px',
+              minHeight: '150px'
+            }}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                  <span>{chart.title}</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {chart.type}
+                  </Badge>
+                </CardTitle>
+                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                    title="Move Chart"
+                  >
+                    <Move className="w-3 h-3" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-6 w-6 p-0 text-blue-400 hover:text-blue-600"
+                    onClick={() => onEditChart(chart)}
+                    title="Edit Chart"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-6 w-6 p-0 text-red-400 hover:text-red-600"
+                    onClick={() => onRemoveChart(chart.id)}
+                    title="Delete Chart"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {chart.signals.map((signal) => (
-                    <Badge key={signal} variant="outline" className="text-xs">
-                      {signal}
-                    </Badge>
-                  ))}
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    {renderChart(chart)}
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {chart.signals.map((signal) => (
+                  <Badge key={signal} variant="outline" className="text-xs">
+                    {signal}
+                  </Badge>
+                ))}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 pb-2">
+              <div style={{ height: chart.size.height - 120 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  {renderChart(chart)}
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+            
+            {/* Resize Handles */}
+            <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center space-x-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600 cursor-ew-resize"
+                  onMouseDown={(e) => {
+                    const startX = e.clientX;
+                    const startWidth = chart.size.width;
+                    
+                    const handleMouseMove = (e: MouseEvent) => {
+                      const delta = e.clientX - startX;
+                      onUpdateChart(chart.id, { 
+                        size: { ...chart.size, width: Math.max(200, startWidth + delta) }
+                      });
+                    };
+                    
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                  title="Resize Width"
+                >
+                  <GripVertical className="w-2 h-2" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600 cursor-ns-resize"
+                  onMouseDown={(e) => {
+                    const startY = e.clientY;
+                    const startHeight = chart.size.height;
+                    
+                    const handleMouseMove = (e: MouseEvent) => {
+                      const delta = e.clientY - startY;
+                      onUpdateChart(chart.id, { 
+                        size: { ...chart.size, height: Math.max(150, startHeight + delta) }
+                      });
+                    };
+                    
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                  title="Resize Height"
+                >
+                  <GripHorizontal className="w-2 h-2" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
   );

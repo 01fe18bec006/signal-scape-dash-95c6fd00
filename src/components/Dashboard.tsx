@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sidebar } from './dashboard/Sidebar';
 import { MainCanvas } from './dashboard/MainCanvas';
 import { ChartModal } from './dashboard/ChartModal';
+import { ChartEditModal } from './dashboard/ChartEditModal';
 import { AIInsights } from './dashboard/AIInsights';
 import { FilterPanel } from './dashboard/FilterPanel';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,10 @@ export interface ChartConfig {
   position: { x: number; y: number };
   size: { width: number; height: number };
   signals: string[];
+  signalFilters: { signal: string; condition: string; value: number }[];
+  legendName: string;
+  xAxisName: string;
+  yAxisName: string;
 }
 
 export interface DashboardConfig {
@@ -34,24 +39,38 @@ export interface DashboardConfig {
 const Dashboard = () => {
   const [charts, setCharts] = useState<ChartConfig[]>([]);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [signals, setSignals] = useState<string[]>(['signal1', 'signal2', 'signal3', 'temperature', 'pressure']);
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
   const { toast } = useToast();
 
-  const handleAddChart = useCallback((chartConfig: Omit<ChartConfig, 'id' | 'position'>) => {
+  const handleAddChart = useCallback(() => {
     const newChart: ChartConfig = {
-      ...chartConfig,
       id: `chart-${Date.now()}`,
+      type: 'line',
+      title: 'New Chart',
+      data: [],
       position: { x: Math.random() * 200, y: Math.random() * 200 },
+      size: { width: 400, height: 300 },
+      signals: [],
+      signalFilters: [],
+      legendName: 'Legend',
+      xAxisName: 'Time',
+      yAxisName: 'Value'
     };
     setCharts(prev => [...prev, newChart]);
-    setIsChartModalOpen(false);
     toast({
       title: "Chart Added",
-      description: `${chartConfig.type} chart created successfully`,
+      description: "New chart created successfully",
     });
   }, [toast]);
+
+  const handleEditChart = useCallback((chart: ChartConfig) => {
+    setEditingChart(chart);
+    setIsEditModalOpen(true);
+  }, []);
 
   const handleUpdateChart = useCallback((id: string, updates: Partial<ChartConfig>) => {
     setCharts(prev => prev.map(chart => 
@@ -113,7 +132,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-red-50">
       <div className="flex h-screen">
         <Sidebar
-          onAddChart={() => setIsChartModalOpen(true)}
+          onAddChart={handleAddChart}
           onSaveConfig={handleSaveConfig}
           onLoadConfig={handleLoadConfig}
           selectedFiles={selectedFiles}
@@ -132,6 +151,7 @@ const Dashboard = () => {
               charts={charts}
               onUpdateChart={handleUpdateChart}
               onRemoveChart={handleRemoveChart}
+              onEditChart={handleEditChart}
             />
           </div>
           
@@ -139,10 +159,11 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <ChartModal
-        isOpen={isChartModalOpen}
-        onClose={() => setIsChartModalOpen(false)}
-        onAddChart={handleAddChart}
+      <ChartEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        chart={editingChart}
+        onUpdateChart={handleUpdateChart}
         signals={signals}
       />
     </div>
