@@ -1,9 +1,8 @@
-
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Move, Maximize2, Edit, GripHorizontal, GripVertical } from 'lucide-react';
+import { X, Move, Maximize2, Edit, GripHorizontal, GripVertical, ZoomIn, ZoomOut } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartConfig } from '../Dashboard';
 
@@ -14,19 +13,19 @@ interface MainCanvasProps {
   onEditChart: (chart: ChartConfig) => void;
 }
 
-// Sample data for demonstration
+// Sample data for demonstration with more realistic signal names
 const sampleData = [
-  { time: '00:00', signal1: 4000, signal2: 2400, signal3: 2400, temperature: 22.5, pressure: 101.3 },
-  { time: '04:00', signal1: 3000, signal2: 1398, signal3: 2210, temperature: 21.8, pressure: 101.1 },
-  { time: '08:00', signal1: 2000, signal2: 9800, signal3: 2290, temperature: 23.2, pressure: 101.5 },
-  { time: '12:00', signal1: 2780, signal2: 3908, signal3: 2000, temperature: 25.1, pressure: 101.2 },
-  { time: '16:00', signal1: 1890, signal2: 4800, signal3: 2181, temperature: 24.6, pressure: 101.4 },
-  { time: '20:00', signal1: 2390, signal2: 3800, signal3: 2500, temperature: 23.8, pressure: 101.6 },
-  { time: '24:00', signal1: 3490, signal2: 4300, signal3: 2100, temperature: 22.9, pressure: 101.3 },
+  { time: '00:00', signal1: 4000, signal2: 2400, signal3: 2400, temperature: 22.5, pressure: 101.3, BattU: 12.5, SDRFs: 800, I: 450 },
+  { time: '04:00', signal1: 3000, signal2: 1398, signal3: 2210, temperature: 21.8, pressure: 101.1, BattU: 12.3, SDRFs: 1250, I: 820 },
+  { time: '08:00', signal1: 2000, signal2: 9800, signal3: 2290, temperature: 23.2, pressure: 101.5, BattU: 12.7, SDRFs: 950, I: 650 },
+  { time: '12:00', signal1: 2780, signal2: 3908, signal3: 2000, temperature: 25.1, pressure: 101.2, BattU: 12.1, SDRFs: 1100, I: 720 },
+  { time: '16:00', signal1: 1890, signal2: 4800, signal3: 2181, temperature: 24.6, pressure: 101.4, BattU: 12.4, SDRFs: 1350, I: 890 },
+  { time: '20:00', signal1: 2390, signal2: 3800, signal3: 2500, temperature: 23.8, pressure: 101.6, BattU: 12.6, SDRFs: 1050, I: 680 },
+  { time: '24:00', signal1: 3490, signal2: 4300, signal3: 2100, temperature: 22.9, pressure: 101.3, BattU: 12.2, SDRFs: 1200, I: 750 },
 ];
 
 const getRandomColor = () => {
-  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
+  const colors = ['#dc2626', '#2563eb', '#16a34a', '#ea580c', '#7c3aed', '#c2410c'];
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
@@ -36,16 +35,62 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
   onRemoveChart,
   onEditChart
 }) => {
+  const [draggedChart, setDraggedChart] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLDivElement>(null);
+
   const renderChart = (chart: ChartConfig) => {
-    const { type, signals, xAxisName, yAxisName } = chart;
+    const { type, signals, xAxisName, yAxisName, enableCursor } = chart;
     
     const chartProps = {
       data: sampleData,
       margin: { top: 5, right: 30, left: 20, bottom: 5 }
     };
 
+    const baseConfig = {
+      strokeDasharray: enableCursor ? "3 3" : "5 5"
+    };
+
     switch (type) {
       case 'line':
+        return (
+          <LineChart {...chartProps}>
+            <CartesianGrid {...baseConfig} />
+            <XAxis dataKey="time" label={{ value: xAxisName, position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
+            <Tooltip />
+            <Legend />
+            {signals.map((signal) => (
+              <Line 
+                key={signal} 
+                type="monotone" 
+                dataKey={signal} 
+                stroke={getRandomColor()}
+                strokeWidth={2}
+                connectNulls={false}
+              />
+            ))}
+          </LineChart>
+        );
+      case 'heatmap':
+        // For heatmap, we'll create a simple correlation matrix visualization
+        return (
+          <div className="p-4 text-center">
+            <h4 className="text-lg font-medium mb-4">Signal Correlation Heatmap</h4>
+            <div className="grid grid-cols-3 gap-1 max-w-xs mx-auto">
+              {signals.slice(0, 9).map((signal, index) => (
+                <div 
+                  key={signal} 
+                  className="w-16 h-16 flex items-center justify-center text-xs text-white rounded"
+                  style={{ backgroundColor: `hsl(${index * 40}, 70%, 50%)` }}
+                >
+                  {signal}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'anomaly':
         return (
           <LineChart {...chartProps}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -53,13 +98,14 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
             <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
-            {signals.map((signal, index) => (
+            {signals.map((signal) => (
               <Line 
                 key={signal} 
                 type="monotone" 
                 dataKey={signal} 
                 stroke={getRandomColor()}
                 strokeWidth={2}
+                dot={{ fill: '#ef4444', r: 3 }}
               />
             ))}
           </LineChart>
@@ -72,7 +118,7 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
             <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
-            {signals.map((signal, index) => (
+            {signals.map((signal) => (
               <Area 
                 key={signal} 
                 type="monotone" 
@@ -91,7 +137,7 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
             <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
-            {signals.map((signal, index) => (
+            {signals.map((signal) => (
               <Bar 
                 key={signal} 
                 dataKey={signal} 
@@ -108,7 +154,7 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
             <YAxis label={{ value: yAxisName, angle: -90, position: 'insideLeft' }} />
             <Tooltip />
             <Legend />
-            {signals.map((signal, index) => (
+            {signals.map((signal) => (
               <Scatter 
                 key={signal} 
                 dataKey={signal} 
@@ -122,27 +168,48 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
     }
   };
 
-  const handleResize = (chartId: string, direction: 'width' | 'height', delta: number) => {
-    const chart = charts.find(c => c.id === chartId);
-    if (!chart) return;
+  const handleMouseDown = (e: React.MouseEvent, chartId: string) => {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('drag-handle')) {
+      const chart = charts.find(c => c.id === chartId);
+      if (!chart) return;
 
-    const newSize = {
-      ...chart.size,
-      [direction]: Math.max(200, chart.size[direction] + delta)
-    };
-    onUpdateChart(chartId, { size: newSize });
+      const rect = e.currentTarget.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      setDraggedChart(chartId);
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!draggedChart || !canvasRef.current) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const newX = e.clientX - canvasRect.left - dragOffset.x;
+    const newY = e.clientY - canvasRect.top - dragOffset.y;
+
+    onUpdateChart(draggedChart, {
+      position: { x: Math.max(0, newX), y: Math.max(0, newY) }
+    });
+  };
+
+  const handleMouseUp = () => {
+    setDraggedChart(null);
   };
 
   if (charts.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-            <LineChart className="w-8 h-8 text-blue-600" />
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-red-100 to-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">B</span>
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Charts Yet</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Signal Analysis Canvas</h3>
           <p className="text-gray-600 mb-4">Create your first chart to start analyzing your signals</p>
-          <Badge variant="outline" className="text-sm">
+          <Badge variant="outline" className="text-sm bg-gradient-to-r from-red-50 to-blue-50">
             Use the sidebar to add charts
           </Badge>
         </div>
@@ -151,24 +218,35 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
   }
 
   return (
-    <div className="h-full relative bg-gray-50 rounded-lg border overflow-hidden">
-      <div className="absolute inset-0 p-4 space-y-4">
+    <div 
+      ref={canvasRef}
+      className="h-full relative bg-gray-50 rounded-lg border overflow-hidden"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      <div className="absolute inset-0 p-4">
         {charts.map((chart) => (
           <Card 
             key={chart.id} 
-            className="relative group hover:shadow-lg transition-shadow duration-200 bg-white border-2 hover:border-blue-300"
+            className="absolute group hover:shadow-xl transition-all duration-200 bg-white border-2 hover:border-red-300 cursor-move"
             style={{ 
+              left: chart.position.x,
+              top: chart.position.y,
               width: chart.size.width, 
               height: chart.size.height,
-              minWidth: '200px',
-              minHeight: '150px'
+              minWidth: '300px',
+              minHeight: '200px',
+              zIndex: draggedChart === chart.id ? 50 : 10
             }}
+            onMouseDown={(e) => handleMouseDown(e, chart.id)}
           >
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 drag-handle cursor-move">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                  <Move className="w-4 h-4 text-gray-400" />
                   <span>{chart.title}</span>
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs bg-gradient-to-r from-red-100 to-blue-100">
                     {chart.type}
                   </Badge>
                 </CardTitle>
@@ -176,16 +254,11 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                    title="Move Chart"
-                  >
-                    <Move className="w-3 h-3" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
                     className="h-6 w-6 p-0 text-blue-400 hover:text-blue-600"
-                    onClick={() => onEditChart(chart)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditChart(chart);
+                    }}
                     title="Edit Chart"
                   >
                     <Edit className="w-3 h-3" />
@@ -194,7 +267,10 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
                     size="sm" 
                     variant="ghost" 
                     className="h-6 w-6 p-0 text-red-400 hover:text-red-600"
-                    onClick={() => onRemoveChart(chart.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveChart(chart.id);
+                    }}
                     title="Delete Chart"
                   >
                     <X className="w-3 h-3" />
@@ -225,13 +301,14 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
                   variant="ghost"
                   className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600 cursor-ew-resize"
                   onMouseDown={(e) => {
+                    e.stopPropagation();
                     const startX = e.clientX;
                     const startWidth = chart.size.width;
                     
                     const handleMouseMove = (e: MouseEvent) => {
                       const delta = e.clientX - startX;
                       onUpdateChart(chart.id, { 
-                        size: { ...chart.size, width: Math.max(200, startWidth + delta) }
+                        size: { ...chart.size, width: Math.max(300, startWidth + delta) }
                       });
                     };
                     
@@ -252,13 +329,14 @@ export const MainCanvas: React.FC<MainCanvasProps> = ({
                   variant="ghost"
                   className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600 cursor-ns-resize"
                   onMouseDown={(e) => {
+                    e.stopPropagation();
                     const startY = e.clientY;
                     const startHeight = chart.size.height;
                     
                     const handleMouseMove = (e: MouseEvent) => {
                       const delta = e.clientY - startY;
                       onUpdateChart(chart.id, { 
-                        size: { ...chart.size, height: Math.max(150, startHeight + delta) }
+                        size: { ...chart.size, height: Math.max(200, startHeight + delta) }
                       });
                     };
                     

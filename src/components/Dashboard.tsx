@@ -8,10 +8,10 @@ import { Sidebar } from './dashboard/Sidebar';
 import { MainCanvas } from './dashboard/MainCanvas';
 import { ChartModal } from './dashboard/ChartModal';
 import { ChartEditModal } from './dashboard/ChartEditModal';
-import { AIInsights } from './dashboard/AIInsights';
 import { FilterPanel } from './dashboard/FilterPanel';
 import { QueryDataset } from './dashboard/QueryDataset';
 import { SignalCreation } from './dashboard/SignalCreation';
+import { AIInsightPanel } from './dashboard/AIInsightPanel';
 import { useToast } from '@/hooks/use-toast';
 
 export interface ChartConfig {
@@ -45,7 +45,7 @@ const Dashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [signals, setSignals] = useState<string[]>(['signal1', 'signal2', 'signal3', 'temperature', 'pressure']);
+  const [signals, setSignals] = useState<string[]>(['signal1', 'signal2', 'signal3', 'temperature', 'pressure', 'BattU', 'SDRFs', 'I']);
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
   const [showQuery, setShowQuery] = useState(false);
   const [showSignalCreation, setShowSignalCreation] = useState(false);
@@ -53,26 +53,8 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const handleAddChart = useCallback(() => {
-    const newChart: ChartConfig = {
-      id: `chart-${Date.now()}`,
-      type: 'line',
-      title: 'New Chart',
-      data: [],
-      position: { x: Math.random() * 200, y: Math.random() * 200 },
-      size: { width: 400, height: 300 },
-      signals: [],
-      signalFilters: [],
-      legendName: 'Legend',
-      xAxisName: 'Time',
-      yAxisName: 'Value',
-      enableCursor: true
-    };
-    setCharts(prev => [...prev, newChart]);
-    toast({
-      title: "Chart Added",
-      description: "New chart created successfully",
-    });
-  }, [toast]);
+    setIsChartModalOpen(true);
+  }, []);
 
   const handleEditChart = useCallback((chart: ChartConfig) => {
     setEditingChart(chart);
@@ -134,36 +116,56 @@ const Dashboard = () => {
     // Save to localStorage
     localStorage.setItem('dashboard-config', JSON.stringify(config));
     
+    // Create and download file
+    const dataStr = JSON.stringify(config, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dashboard-config-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
     toast({
       title: "Configuration Saved",
-      description: "Dashboard layout and settings have been saved",
+      description: "Dashboard layout and settings have been saved and downloaded",
     });
   }, [charts, selectedFiles, toast]);
 
   const handleLoadConfig = useCallback(() => {
-    const saved = localStorage.getItem('dashboard-config');
-    if (saved) {
-      try {
-        const config = JSON.parse(saved);
-        setCharts(config.charts || []);
-        setDashboardConfig(config);
-        toast({
-          title: "Configuration Loaded",
-          description: "Dashboard has been restored from saved settings",
-        });
-      } catch (error) {
-        toast({
-          title: "Load Failed",
-          description: "Could not load configuration",
-          variant: "destructive",
-        });
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const config = JSON.parse(e.target?.result as string);
+            setCharts(config.charts || []);
+            setDashboardConfig(config);
+            toast({
+              title: "Configuration Loaded",
+              description: "Dashboard has been restored from saved settings",
+            });
+          } catch (error) {
+            toast({
+              title: "Load Failed",
+              description: "Could not load configuration file",
+              variant: "destructive",
+            });
+          }
+        };
+        reader.readAsText(file);
       }
-    }
+    };
+    input.click();
   }, [toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-red-50">
-      <div className="flex h-screen">
+      <div className="flex h-screen relative">
         <Sidebar
           onAddChart={handleAddChart}
           onSaveConfig={handleSaveConfig}
@@ -182,7 +184,7 @@ const Dashboard = () => {
             selectedFiles={selectedFiles}
           />
           
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-hidden relative">
             <MainCanvas
               charts={charts}
               onUpdateChart={handleUpdateChart}
@@ -190,20 +192,33 @@ const Dashboard = () => {
               onEditChart={handleEditChart}
             />
 
-            <QueryDataset 
-              signals={signals}
-              isVisible={showQuery}
-            />
+            {showQuery && (
+              <div className="absolute bottom-4 left-4 right-4 z-40">
+                <QueryDataset 
+                  signals={signals}
+                  isVisible={showQuery}
+                />
+              </div>
+            )}
 
-            <SignalCreation 
-              signals={signals}
-              isVisible={showSignalCreation}
-              onSignalCreated={handleSignalCreated}
-            />
+            {showSignalCreation && (
+              <div className="absolute bottom-4 left-4 right-4 z-40">
+                <SignalCreation 
+                  signals={signals}
+                  isVisible={showSignalCreation}
+                  onSignalCreated={handleSignalCreated}
+                />
+              </div>
+            )}
           </div>
-          
-          <AIInsights charts={charts} signals={signals} />
         </div>
+
+        <AIInsightPanel
+          isOpen={showAI}
+          onClose={() => setShowAI(false)}
+          charts={charts}
+          signals={signals}
+        />
       </div>
 
       <ChartModal
